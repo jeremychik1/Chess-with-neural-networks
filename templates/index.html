@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Chess vs Bot</title>
+    <link rel="stylesheet"
+      href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
+      integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU"
+      crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+    integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
+    crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"
+    integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD"
+    crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 10px;
+        }
+        #board {
+            width: 900px;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess vs Python Bot</h1>
+    <div id="board"></div>
+    <p id="gameStatus">Game in progress...</p>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var game = new Chess();
+            var board = Chessboard('board', {
+                draggable: true,
+                position: 'start',
+                onDrop: handleMove,
+                pieceTheme: '/static/img/chesspieces/wikipedia/{piece}.png'
+            });
+
+            function handleMove(source, target) {
+                var move = game.move({ from: source, to: target });
+
+                if (move === null) {
+                    return 'snapback';  // Invalid move
+                }
+
+                updateGameStatus();
+                setTimeout(fetchBotMove, 500);  // Get bot move after a delay
+            }
+
+            function fetchBotMove() {
+                fetch('/bot_move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ position: game.fen() })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Bot move:", data);  // Log the response
+                    board.move(data.move);
+                    if (data && data.move) {
+                        const result = game.move(data.move);
+                        console.log("Move result:", result);  // Should be an object, not null
+                        board.position(game.fen());
+                    } else {
+                        console.error("Invalid move from bot:", data);
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            }
+
+            function updateGameStatus() {
+                var statusElement = document.getElementById('gameStatus');
+                if (game.in_checkmate()) {
+                    statusElement.innerText = 'Checkmate! Game over.';
+                } else if (game.in_draw()) {
+                    statusElement.innerText = 'Draw!';
+                } else {
+                    statusElement.innerText = 'Your turn!';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
