@@ -1,2 +1,3 @@
 # Chess-with-neural-networks
-Train chess neural network using pytorch
+Trained chess neural network using pytorch
+Used data from every recorded game Magnus Carlsen has ever played so imitate his playing style
